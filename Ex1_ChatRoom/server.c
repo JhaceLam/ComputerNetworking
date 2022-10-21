@@ -10,7 +10,7 @@ SOCKET sockets[MAX_THREAD_NUM];
 HANDLE threads[MAX_THREAD_NUM];
 DWORD threadIDs[MAX_THREAD_NUM];
 
-HANDLE event, workEnd;
+HANDLE event;
 // Prohibit:
 // 1. One thread is getting socketCount while the other is modifing it.
 // 2. Two or more threads modify socketCount at the same time.
@@ -163,7 +163,6 @@ int main(int argc, char *argv[]) {
 
     // Create event: autoReset, initialState = TRUE
     event = CreateEvent(NULL, FALSE, TRUE, NULL);
-    workEnd = CreateEvent(NULL, TRUE, FALSE, NULL);
 
     // Start accept
     while (1) {
@@ -194,7 +193,6 @@ int main(int argc, char *argv[]) {
         SetEvent(event);
     }
 
-    WaitForSingleObject(workEnd, INFINITE);
     closesocket(serverSocket);
     WSACleanup();
 
