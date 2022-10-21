@@ -5,7 +5,7 @@
 #include <windows.h>
 #pragma comment(lib, "Ws2_32.lib")
 
-HANDLE event; // Mark the end of work
+HANDLE workEnd; // Mark the end of work
 
 void WINAPI threadSend(LPVOID lp) {
     SOCKET clientSocket = *((SOCKET *)lp);
@@ -20,10 +20,12 @@ void WINAPI threadSend(LPVOID lp) {
             continue;
         }
         if (!strcmp(msg, ">Quit") || !strcmp(msg, ">Quit ")) {
-            SetEvent(event);
+            SetEvent(workEnd);
             break;
         }
-        strcpy(msg, "Unknown command.");
+        else {
+            strcpy(msg, "Unknown command.");
+        }
         WrapMessage(TYPE_ERROR, msg, (time_t)NULL);
         printf("%s\n", msg);
     }
@@ -72,6 +74,8 @@ int main(int argc, char *argv[]) {
         WrapMessage(TYPE_GET, msg, (time_t)NULL);
         printf("%s", msg);
         scanf("%d", &port);
+
+        getchar(); // Get CR or LF
     } else {
         IPAddr = inet_addr(argv[1]);
         port = atoi(argv[2]);
@@ -115,13 +119,13 @@ int main(int argc, char *argv[]) {
     // Send username
     send(clientSocket, username, strlen(username), 0);
 
-    // Create event: manualReset, initialState = FALSE
-    event = CreateEvent(NULL, TRUE, FALSE, NULL);
+    // Create workStart, workEnd: manualReset, initialState = FALSE
+    workEnd = CreateEvent(NULL, TRUE, FALSE, NULL);
 
     threads[0] = CreateThread(NULL, 0, (DWORD (*)(void *))threadSend, &clientSocket, 0, &threadIDs[0]);
     threads[1] = CreateThread(NULL, 0, (DWORD (*)(void *))threadRecv, &clientSocket, 0, &threadIDs[1]);
 
-    WaitForSingleObject(event, INFINITE);
+    WaitForSingleObject(workEnd, INFINITE);
     CloseHandle(threads[0]);
     CloseHandle(threads[1]);
 
